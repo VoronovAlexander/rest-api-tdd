@@ -2,12 +2,21 @@
 
 namespace Tests;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Foundation\Testing\TestResponse;
+use Illuminate\Foundation\Testing\WithFaker;
 
 abstract class TestCase extends BaseTestCase
 {
-    use CreatesApplication;
+    use CreatesApplication, RefreshDatabase, WithFaker;
+
+    public function setUp(): void
+    {
+        parent::setUp();
+        $this->artisan('passport:install');
+        $this->seed();
+    }
 
     protected function assertArraySubsetNew($array, $haystack) {
         foreach ($array as $key => $value) {
