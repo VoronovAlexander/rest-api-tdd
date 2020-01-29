@@ -10,10 +10,74 @@ use Tests\TestCase;
 
 class ItemControllerTest extends TestCase
 {
-    use DatabaseMigrations, RefreshDatabase;
+    use DatabaseMigrations, RefreshDatabase, WithFaker;
+
+    private function errorCasesForStoreOrUpdate() :array
+    {
+        return [
+            [
+                // title => required
+                'content' => $this->faker->realText(200),
+                'is_important' => $this->faker->boolean()
+            ],
+            [
+                // title => min:3
+                'title' => $this->faker->lexify('??'),
+                'content' => $this->faker->realText(200),
+                'is_important' => $this->faker->boolean()
+            ],
+            [
+                // title => max:255
+                'title' => $this->faker->regexify('[A-Za-z0-9 ]{256}'),
+                'content' => $this->faker->realText(200),
+                'is_important' => $this->faker->boolean()
+            ],
+            [
+                // content => required
+                'title' => $this->faker->realText(255),
+                'is_important' => $this->faker->boolean()
+            ],
+            [
+                // content => min:2
+                'title' => $this->faker->realText(255),
+                'content' => $this->faker->lexify('??'),
+                'is_important' => $this->faker->boolean()
+            ],
+            [
+                // content => max:5000
+                'title' => $this->faker->realText(255),
+                'content' => $this->faker->regexify('[A-Za-z0-9 ]{5001}'),
+                'is_important' => $this->faker->boolean()
+            ],
+            [
+                // is_important => required
+                'title' => $this->faker->realText(255),
+                'content' => $this->faker->realText(5000),
+            ],
+            [
+                // is_important => boolean
+                'title' => $this->faker->realText(255),
+                'content' => $this->faker->realText(5000),
+                'is_important' => $this->faker->lexify('?'),
+            ],
+            [
+                // is_important => boolean
+                'title' => $this->faker->realText(255),
+                'content' => $this->faker->realText(5000),
+                'is_important' => $this->faker->numberBetween(2,9)
+            ]
+        ];
+    }
 
     public function testStore() {
         $item = factory(Item::class)->make();
+
+        $errorCases = $this->errorCasesForStoreOrUpdate();
+
+        foreach ($errorCases as $errorCase) {
+            $response = $this->json('POST', 'api/items', $errorCase);
+            $this->responseValidationFailedTest($response);
+        }
 
         $response = $this->json('POST', 'api/items', $item->toArray());
         $response->assertStatus(201);
@@ -24,7 +88,32 @@ class ItemControllerTest extends TestCase
     public function testIndex() {
         factory(Item::class, 100)->create();
 
-        $response = $this->json('GET', 'api/items');
+        $errorCases = [
+            [],
+            [
+                'page' => 0,
+            ],
+            [
+                'page' => 1,
+                'per_page' => 0,
+            ],
+            [
+                'page' => 1,
+                'per_page' => 30
+            ]
+        ];
+
+        foreach ($errorCases as $errorCase) {
+            $response = $this->json('GET', 'api/items', $errorCase);
+            $this->responseValidationFailedTest($response);
+        }
+
+        $per_page = $this->faker->numberBetween(1, 25);
+
+        $response = $this->json('GET', 'api/items', [
+            'page' => 1,
+            'per_page' => $per_page
+        ]);
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -44,13 +133,13 @@ class ItemControllerTest extends TestCase
             ]);
 
         $items = Item::orderByDesc('id')
-            ->limit(10)
+            ->limit($per_page)
             ->get()
             ->toArray();
 
         $receivedItems = $response->decodeResponseJson('data');
 
-        $this->assertCount(10, $receivedItems);
+        $this->assertCount($per_page, $receivedItems);
 
         $this->assertEquals($receivedItems, $items);
 
@@ -58,6 +147,17 @@ class ItemControllerTest extends TestCase
 
     public function testShow() {
         $item = factory(Item::class)->create();
+
+        $errorCases = [
+            0,
+            -1,
+            100500,
+        ];
+
+        foreach ($errorCases as $errorCase) {
+            $response = $this->json('GET', "api/items/$errorCase");
+            $this->responseValidationFailedTest($response);
+        }
 
         $response = $this->json('GET', "api/items/$item->id");
 
@@ -80,6 +180,13 @@ class ItemControllerTest extends TestCase
         $item = factory(Item::class)->create();
         $newItem = factory(Item::class)->make();
 
+        $errorCases = $this->errorCasesForStoreOrUpdate();
+
+        foreach ($errorCases as $errorCase) {
+            $response = $this->json('PUT', "api/items/$item->id", $errorCase);
+            $this->responseValidationFailedTest($response);
+        }
+
         $response = $this->json('PUT', "api/items/$item->id", $newItem->toArray());
 
         $response->assertStatus(204);
@@ -91,6 +198,17 @@ class ItemControllerTest extends TestCase
 
     public function testDestroy() {
         $item = factory(Item::class)->create();
+
+        $errorCases = [
+            0,
+            -1,
+            100500,
+        ];
+
+        foreach ($errorCases as $errorCase) {
+            $response = $this->json('DELETE', "api/items/$errorCase");
+            $this->responseValidationFailedTest($response);
+        }
 
         $response = $this->json('DELETE', "api/items/$item->id");
 

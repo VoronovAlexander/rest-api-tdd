@@ -2,31 +2,28 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Api\ItemDestroyRequest;
+use App\Http\Requests\Api\ItemIndexRequest;
+use App\Http\Requests\Api\ItemShowRequest;
+use App\Http\Requests\Api\ItemStoreRequest;
+use App\Http\Requests\Api\ItemUpdateRequest;
 use App\Item;
 use Illuminate\Http\Request;
 
 class ItemController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function index()
+
+    public function index(ItemIndexRequest $request)
     {
+        $per_page = $request->get('per_page', 10);
+
         $items = Item::orderByDesc('id')
-            ->paginate(10);
+            ->paginate($per_page);
 
         return response($items, 200);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
+    public function store(ItemStoreRequest $request)
     {
         $data = $request->only('title', 'content', 'is_important');
 
@@ -35,26 +32,13 @@ class ItemController extends Controller
         return response(null, 201);
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
+    public function show(ItemShowRequest $request, $id)
     {
         $item = Item::find($id);
         return response($item, 200);
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
+    public function update(ItemUpdateRequest $request, $id)
     {
         $data = $request->only('title', 'content', 'is_important');
 
@@ -64,13 +48,7 @@ class ItemController extends Controller
         return response(null, 204);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy($id)
+    public function destroy(ItemDestroyRequest $request, $id)
     {
         $item = Item::find($id);
         $item->delete();
