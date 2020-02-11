@@ -18,3 +18,6 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 });
 
 Route::apiResource('items', 'ItemController');
+
+Route::post('/auth/signup', 'SignController@signup');
+Route::post('/auth/signin', 'SignController@signin');
