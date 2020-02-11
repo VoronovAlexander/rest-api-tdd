@@ -7,6 +7,8 @@ use App\Http\Requests\Api\ItemIndexRequest;
 use App\Http\Requests\Api\ItemShowRequest;
 use App\Http\Requests\Api\ItemStoreRequest;
 use App\Http\Requests\Api\ItemUpdateRequest;
+use App\Http\Resources\Items\ItemCollection;
+use App\Http\Resources\Items\ItemResource;
 use App\Item;
 use Illuminate\Http\Request;
 
@@ -20,7 +22,7 @@ class ItemController extends Controller
         $items = Item::orderByDesc('id')
             ->paginate($per_page);
 
-        return response($items, 200);
+        return response(ItemCollection::make($items), 200);
     }
 
     public function store(ItemStoreRequest $request)
@@ -35,7 +37,7 @@ class ItemController extends Controller
     public function show(ItemShowRequest $request, $id)
     {
         $item = Item::find($id);
-        return response($item, 200);
+        return response(ItemResource::make($item), 200);
     }
 
     public function update(ItemUpdateRequest $request, $id)
