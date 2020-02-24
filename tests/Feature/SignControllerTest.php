@@ -125,13 +125,16 @@ class SignControllerTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonStructure([
-                'accessToken',
+                'access_token',
+                'refresh_token',
             ]);
 
         $data = $response->decodeResponseJson();
 
-        $this->assertNotNull($data['accessToken']);
-        $this->assertIsString($data['accessToken']);
+        $this->assertNotNull($data['access_token']);
+        $this->assertIsString($data['access_token']);
+        $this->assertNotNull($data['refresh_token']);
+        $this->assertIsString($data['refresh_token']);
     }
 
     /**
@@ -146,5 +149,33 @@ class SignControllerTest extends TestCase
 
         $response = $this->json('POST', '/api/auth/signin', $user);
         $response->assertStatus(403);
+    }
+
+    /**
+     * /api/auth/refresh
+     * Проверка обновления токена
+     */
+    public function testRefreshToken()
+    {
+        $user = factory(User::class)->create();
+
+        $userArray = $user->toArray();
+        $userArray['password'] = 'password';
+
+        $response = $this->json('POST', '/api/auth/signin', $userArray);
+
+        $refreshToken = $response->decodeResponseJson('refresh_token');
+
+        $response = $this->actingAs($user, 'api')
+            ->json('POST', '/api/auth/refresh', [
+                'refresh_token' => $refreshToken,
+            ]);
+
+        $data = $response->decodeResponseJson();
+
+        $this->assertNotNull($data['access_token']);
+        $this->assertIsString($data['access_token']);
+        $this->assertNotNull($data['refresh_token']);
+        $this->assertIsString($data['refresh_token']);
     }
 }

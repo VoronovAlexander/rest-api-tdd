@@ -21,3 +21,4 @@ Route::apiResource('items', 'ItemController');
 
 Route::post('/auth/signup', 'SignController@signup');
 Route::post('/auth/signin', 'SignController@signin');
+Route::post('/auth/refresh', 'SignController@refresh')->middleware('auth:api');
